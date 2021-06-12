@@ -86,6 +86,8 @@ int endRead = 0;
 unsigned int brojanje=0;
 unsigned int brojac=0;
 int indeks=0,j=0;
+u32 stanje_ready_registra=0;
+
 MODULE_DEVICE_TABLE(of, vga_of_match);
 
 
@@ -194,10 +196,10 @@ static int vga_remove(struct platform_device *pdev)
   int i = 0;
   // Exit Device Module
   if(brojac==0){
-  for (i = 0; i < (28*28); i++) 
+  for (i = 0; i < (28*28*2); i++) 
   { 
-    iowrite32(i*4, vp2->base_addr2 + 8); 
-    iowrite32(0, vp2->base_addr2); 
+    //iowrite32(i*4, vp2->base_addr2 + 8); 
+    iowrite32(0, vp2->base_addr2+i*4); 
   } 
   printk(KERN_INFO "VGA_remove: Vga remove in process");
   iounmap(vp2->base_addr2);
@@ -233,14 +235,12 @@ static int vga_open(struct inode *i, struct file *f)
 
 static int vga_close(struct inode *i, struct file *f)
 {
-  //printk(KERN_INFO "vga closed\n");
   return 0;
 }
 
 
 static ssize_t vga_read(struct file *f, char __user *buf, size_t len, loff_t *off)
 {
-  //printk("vga read\n");
   int ret;
   long int length = 0;
   u32 podatak=0 ;
@@ -250,66 +250,73 @@ static ssize_t vga_read(struct file *f, char __user *buf, size_t len, loff_t *of
 	endRead=0;
 	return 0;
   }
+  if(stanje_ready_registra!=1){
+  while(stanje_ready_registra!=1){
+  stanje_ready_registra=ioread32(vp->base_addr+4);
+  length=scnprintf(buff,BUFF_SIZE,"%d",stanje_ready_registra);
+  ret=copy_to_user(buf,buff,length);
+  }
+  }
+  else{
   ofset=j*4;
-  podatak=ioread32(vp2->base_addr2+ofset);
-//  printk("ADRESA SA KOJE SE CITA %x\n",vp2->base_addr2);
+  podatak=ioread32(vp2->base_addr2+ofset+784*4);
   length=scnprintf(buff,BUFF_SIZE, "%x",podatak);	
   ret=copy_to_user(buf,buff,length);
   if(ret)
 	return -EFAULT;
- // printk(KERN_INFO "Succesfully read\n");
-  endRead=1;
   j++;
+  }
+  endRead=1;
   return length;
   
   
  }
 static ssize_t vga_write(struct file *f, const char __user *buf, size_t length, loff_t *off)
 {
-  printk(KERN_INFO "USAO U FUNKCIJU");	
   char buff[BUFF_SIZE];
   int  pix;//bilo unsigned long long
   int ret;
-  int start_deskew=0;  
+  int start_deskew=0; 
   int procitano=0;
+  char string[14];
+  char start1[] ="start=1";
+  char start0[]="start=0";
+  char trigger[]="trigger_start";
   unsigned char  pixel[10];  
-  ret = copy_from_user(buff, buf, length);
-  printk(KERN_INFO"PRVI RET");  
+  ret = copy_from_user(buff, buf, length); 
   if(ret){
     printk("copy from user failed \n");
     return -EFAULT;
   }  
   buff[length-1] = '\0';
- ret=sscanf(buff, "start=%x",&start_deskew);//bilo %d
-  if(ret==1){
-  	if(start_deskew==0)
+  ret=sscanf(buff, "%s",&string);//bilo %d
+   
+   	if(!strcmp(string,start0)){
 	iowrite32(0,vp->base_addr);
- 	else if(start_deskew==1)
-	iowrite32(1,vp->base_addr);
-  }
- else
-{
-  ret=sscanf(buff, "%x",& pix);//bilo pixel
-  //ret=kstrtoull(pixel,0,&pix);
- //printk(KERN_INFO"DRUGI RET");
-  if(ret != EINVAL){//checking for parsing error
- //int index=0;
-  //for(index=0;index<784;index++){		
- 	//printk(KERN_INFO "DOSAO DOVDE"); 
-    //  iowrite32(indeks*4, vp2->base_addr2 + 8);// iowrite32(POZICIJA U BRAM,ISTO OSTAJE(ADRESA GPIO REG)
-      printk(KERN_INFO "DOSAO POSLE IOWRITE1");
-      iowrite32(pix, vp2->base_addr2+indeks*4);
- //iowrite32(PODATAK IZ TEKSTUALNOG FAJLA,ISTO OSTAJE(ADRESA GPIO REG ZA PODATAK)      
-  //       }
-	//procitano=ioread32(vp2->base_addr2+indeks*4);
-        //printk(KERN_INFO "PROCITANO: %x\n",procitano); 
-	indeks++;
- 	//printk(KERN_INFO "UPISANO %i\n", indeks);
+	
 
 	}
- }
-	return length; 
+ 	else if(!strcmp(string,start1)){
+	iowrite32(1,vp->base_addr);
+	
+	}
+ 	else if(!strcmp(string,trigger))
+	{
+        iowrite32(1,vp->base_addr);
+	iowrite32(0,vp->base_addr);
+	
+ 	}
+  
  
+    else{
+  ret=sscanf(buff, "%x",& pix);//bilo pixel
+  
+  if(ret != EINVAL){
+      iowrite32(pix, vp2->base_addr2+indeks*4);      
+	indeks++; 
+	}
+     }
+	return length; 
 }
 
 //***************************************************
