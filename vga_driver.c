@@ -265,6 +265,10 @@ static ssize_t vga_read(struct file *f, char __user *buf, size_t len, loff_t *of
   if(ret)
 	return -EFAULT;
   j++;
+  if(j==784){
+	j=0;
+	stanje_ready_registra=0;
+  }
   }
   endRead=1;
   return length;
@@ -276,13 +280,10 @@ static ssize_t vga_write(struct file *f, const char __user *buf, size_t length, 
   char buff[BUFF_SIZE];
   int  pix;//bilo unsigned long long
   int ret;
-  int start_deskew=0; 
-  int procitano=0;
   char string[14];
   char start1[] ="start=1";
   char start0[]="start=0";
   char trigger[]="trigger_start";
-  unsigned char  pixel[10];  
   ret = copy_from_user(buff, buf, length); 
   if(ret){
     printk("copy from user failed \n");
@@ -313,7 +314,11 @@ static ssize_t vga_write(struct file *f, const char __user *buf, size_t length, 
   
   if(ret != EINVAL){
       iowrite32(pix, vp2->base_addr2+indeks*4);      
-	indeks++; 
+	indeks++;
+	if(indeks==784){
+		//printk("USAO U PROVERU INDEKSA\n");
+		indeks=0;
+	} 
 	}
      }
 	return length; 
@@ -364,7 +369,7 @@ static int __init vga_init(void)
     printk(KERN_ERR "VGA_init: Failed to add cdev\n");
     goto fail_2;
   }
-  printk(KERN_INFO "VGA_init: Init Device \"%s\".\n");
+  printk(KERN_INFO "VGA_init: Init Device DESKEW .\n");
 
   return platform_driver_register(&vga_driver);
 

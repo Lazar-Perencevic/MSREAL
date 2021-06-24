@@ -16,15 +16,17 @@ int broj=0,j=0,k=0;
 char *str;
 size_t nbytes=6;
 int procitano[784];
-int stanje_ready_registra=0;
+int stanje_ready_registra=0,broj_slike=0;
 fp=fopen("/dev/vga","w");
+printf("NAPISITE BROJ SLIKE KOJU ZELITE DA OBRADITE 0-9\n");
+scanf("%d",&broj_slike);
 if(fp==NULL)
   {
  	printf("Ne moze se otvoriti fajl /dev/vga\n");
   return -1;
   }
 for(i=0;i<784;i++){
- 	fprintf(fp,"%x\n",images[0][i]);
+ 	fprintf(fp,"%x\n",images[broj_slike][i]);
 	fflush(fp);
 } 
   fprintf(fp,"start=1\n");
@@ -65,9 +67,9 @@ if(stanje_ready_registra==1){
  for(k=0;k<784;k++){
 		if((k%28)==0)
 			printf("\n");
-		if(images[0][k]==0)
+		if(images[broj_slike][k]==0)
 			printf(" ");
-		else if(images[0][k]<10000)
+		else if(images[broj_slike][k]<10000)
 			printf("|");
 		else
 			printf("%c",143);

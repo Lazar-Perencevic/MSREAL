@@ -59,6 +59,10 @@ if(stanje_ready_registra==1){
 	if(output_image[j]==procitano[j])
  		broj++;
 		   }
+ for(k=0;k<784;k++){
+  printf(" %x ", procitano[k]);
+}
+
  } 
 
  if(fclose(fp)==EOF){
@@ -67,10 +71,7 @@ if(stanje_ready_registra==1){
 
  }  
  free(str);
- for(k=0;k<784;k++){
-  printf(" %x ", procitano[k]);
-}
- printf("BROJ ISTIH JE %d\n", broj);
+  printf("BROJ ISTIH JE %d\n", broj);
 
 
 
