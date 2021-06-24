@@ -24,7 +24,7 @@ if(fp==NULL)
   return -1;
   }
 for(i=0;i<784;i++){
- 	fprintf(fp,"%x\n",input_image[i]);
+ 	fprintf(fp,"%x\n",images[0][i]);
 	fflush(fp);
 } 
   fprintf(fp,"start=1\n");
@@ -55,12 +55,7 @@ if(stanje_ready_registra==1){
      sscanf(str,"%x",&procitano[i]);
    		
  }
- for(j=0;j<784;j++){
-	if(output_image[j]==procitano[j])
- 		broj++;
-		   }
- } 
-
+} 
  if(fclose(fp)==EOF){
 	puts("Problem pri zatvaranju");
  return -1;
@@ -68,13 +63,25 @@ if(stanje_ready_registra==1){
  }  
  free(str);
  for(k=0;k<784;k++){
-  printf(" %x ", procitano[k]);
-}
- printf("BROJ ISTIH JE %d\n", broj);
-
-
-
-
+		if((k%28)==0)
+			printf("\n");
+		if(images[0][k]==0)
+			printf(" ");
+		else if(images[0][k]<10000)
+			printf("|");
+		else
+			printf("%c",143);
+	}
+for(k=0;k<784;k++){
+		if((k%28)==0)
+			printf("\n");
+		if(procitano[k]==0)
+			printf(" ");
+		else if(procitano[k]<10000)
+			printf("|");
+		else
+			printf("%c",143);
+	}
 
   return 0;
 }
